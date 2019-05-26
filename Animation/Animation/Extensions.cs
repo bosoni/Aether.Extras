@@ -27,12 +27,6 @@ namespace tainicom.Aether.Animation
             var animations = model.Tag as Animations;
             return animations;
         }
-
-        public static void UpdateVertices(this ModelMeshPart meshPart, Matrix[] boneTransforms)
-        {
-            var animatedVertexBuffer = meshPart.VertexBuffer as CpuAnimatedVertexBuffer;
-            animatedVertexBuffer.UpdateVertices(boneTransforms, meshPart.VertexOffset, meshPart.NumVertices);
-        }
         
     }
 }

@@ -1,33 +1,25 @@
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
 using tainicom.Aether.Animation;
-using tainicom.Aether.Shaders.Components;
 
 namespace Samples.Animation
 {
-    enum DrawMode : int
-    {
-        CPU,
-        GPU,
-    }
-
     public class Game1 : Microsoft.Xna.Framework.Game
     {
         GraphicsDeviceManager graphics;
         SpriteBatch spriteBatch;
         SpriteFont font;
-        InfiniteGridComponent grid;
 
-        Model _model_CPU;
         Model _model_GPU;
         Animations _animations;
-        DrawMode drawMode = DrawMode.CPU;
 
         KeyboardState prevKeyboardState;
+        Clip[] animations = new Clip[10];
 
         public Game1()
         {
@@ -45,21 +37,30 @@ namespace Samples.Animation
             spriteBatch = new SpriteBatch(GraphicsDevice);
             font = Content.Load<SpriteFont>("font");
 
-            grid = new InfiniteGridComponent(GraphicsDevice, Content);
-            grid.Initialize();
-                        
-            _model_CPU = Content.Load<Model>("Dude/dude");
+            /*
             _model_GPU = Content.Load<Model>("Dude/dude_GPU");
-
-            _animations = _model_CPU.GetAnimations(); // Animation Data are the same between the two models
+            _animations = _model_GPU.GetAnimations(); // Animation Data are the same between the two models
             var clip = _animations.Clips["Take 001"];
-            _animations.SetClip(clip);
+            */
+
+            _model_GPU = Content.Load<Model>("stickman_nla");
+            _animations = _model_GPU.GetAnimations(); // Animation Data are the same between the two models
+
+            int c = 0;
+            foreach (KeyValuePair<string, Clip> kvp in _animations.Clips)
+            {
+                Console.WriteLine("Key = {0}, Value = {1}", kvp.Key, kvp.Value);
+                animations[c++] = kvp.Value;
+            }
+            //_animations.SetClip(_animations.Clips["Walk.001"]);
+            _animations.SetClip(animations[3]);
         }
 
         protected override void UnloadContent()
         {
         }
 
+        int curAnim = 0;
         protected override void Update(GameTime gameTime)
         {
             var keyboardState = Keyboard.GetState();
@@ -69,11 +70,18 @@ namespace Samples.Animation
             if (keyboardState.IsKeyDown(Keys.Escape) || gamePadState.Buttons.Back == ButtonState.Pressed)
                 this.Exit();
 
-            if ((keyboardState.IsKeyDown(Keys.Space) && prevKeyboardState.IsKeyUp(Keys.Space)) || gamePadState.Buttons.A == ButtonState.Pressed)
+            if (keyboardState.IsKeyDown(Keys.Space))
             {
-                int drawModesCount = Enum.GetValues(drawMode.GetType()).Length;
-                drawMode = (DrawMode)(((int)drawMode + 1) % drawModesCount);
+                curAnim++;
+                if (curAnim >= 4) curAnim = 0;
+                _animations.SetClip(animations[curAnim]);
             }
+
+            if (keyboardState.IsKeyDown(Keys.Up))
+                Zoom += 5;
+
+            if (keyboardState.IsKeyDown(Keys.Down))
+                Zoom -= 5;
 
             prevKeyboardState = keyboardState;
 
@@ -83,7 +91,7 @@ namespace Samples.Animation
         }
 
         private Vector3 Position = Vector3.Zero;
-        private float Zoom = 100f;
+        private float Zoom = 1000f;
         private float RotationY = 0.0f;
         private float RotationX = 0.0f;
         private Matrix gameWorldRotation = Matrix.Identity;
@@ -98,53 +106,37 @@ namespace Samples.Animation
 
         protected override void Draw(GameTime gameTime)
         {
-            GraphicsDevice.Clear(Color.Black);
+            GraphicsDevice.Clear(Color.Blue);
 
             float aspectRatio = graphics.GraphicsDevice.Viewport.AspectRatio;
-            Matrix projection = Matrix.CreatePerspectiveFieldOfView(MathHelper.ToRadians(45.0f), aspectRatio, 0.01f, 500.0f);
+            Matrix projection = Matrix.CreatePerspectiveFieldOfView(MathHelper.ToRadians(45.0f), aspectRatio, 0.01f, 10000.0f);
             Matrix view = Matrix.CreateLookAt(
-                new Vector3(0.0f, 35.0f, -Zoom),
-                new Vector3(0.0f, 35.0f, 0), 
-                Vector3.Up);
-
-            // Draw Grid
-            grid.Projection = projection;
-            grid.View = view;
-            //grid.EditMatrix = Matrix.Identity; // XY plane
-            grid.EditMatrix = Matrix.CreateFromAxisAngle(Vector3.UnitX, MathHelper.ToRadians(-90)); // XZ plane
-            grid.Draw(gameTime);
+                            new Vector3(0.0f, 40, -Zoom),
+                            new Vector3(0.0f, 40.0f, 0),
+                            Vector3.Up);
 
             GraphicsDevice.BlendState = BlendState.Opaque;
             GraphicsDevice.RasterizerState = RasterizerState.CullCounterClockwise;
             GraphicsDevice.DepthStencilState = DepthStencilState.Default;
             GraphicsDevice.SamplerStates[0] = SamplerState.LinearWrap;
 
-            Model m = _model_CPU;
-            if (drawMode == DrawMode.CPU)
-                m = _model_CPU;
-            else if (drawMode == DrawMode.GPU)
-                m = _model_GPU;
-
-            Matrix[] transforms = new Matrix[m.Bones.Count];
-            m.CopyAbsoluteBoneTransformsTo(transforms);
+            Matrix[] transforms = new Matrix[_model_GPU.Bones.Count];
+            _model_GPU.CopyAbsoluteBoneTransformsTo(transforms);
 
             sw.Reset();
             sw.Start();
-            foreach (ModelMesh mesh in m.Meshes)
+
+            //Texture2D tex = Content.Load<Texture2D>("stickman_0"); // tried manually set texture, didnt work. why?
+
+            foreach (ModelMesh mesh in _model_GPU.Meshes)
             {
                 foreach (var part in mesh.MeshParts)
                 {
-                    if (drawMode == DrawMode.CPU)
-                        ((BasicEffect)part.Effect).SpecularColor = Vector3.Zero;
-                    else if (drawMode == DrawMode.GPU)
-                        ((SkinnedEffect)part.Effect).SpecularColor = Vector3.Zero;                        
+                    //((SkinnedEffect)part.Effect).Texture = tex; // tried manually set texture, didnt work. why?
+                    ((SkinnedEffect)part.Effect).SpecularColor = Vector3.One;
                     ConfigureEffectMatrices((IEffectMatrices)part.Effect, Matrix.Identity, view, projection);
                     ConfigureEffectLighting((IEffectLights)part.Effect);
-                    
-                    if (drawMode == DrawMode.CPU)
-                        part.UpdateVertices(_animations.AnimationTransforms); // animate vertices on CPU
-                    else if (drawMode == DrawMode.GPU)
-                        ((SkinnedEffect)part.Effect).SetBoneTransforms(_animations.AnimationTransforms);// animate vertices on GPU
+                    ((SkinnedEffect)part.Effect).SetBoneTransforms(_animations.AnimationTransforms);// animate vertices on GPU
                 }
                 mesh.Draw();
             }
@@ -152,23 +144,24 @@ namespace Samples.Animation
 
             double msec = sw.Elapsed.TotalMilliseconds;
             msecMin = Math.Min(msecMin, msec);
-            if(avg != 0 )
+            if (avg != 0)
                 msecMax = Math.Max(msecMax, msec);
             acc += msec; c++;
-            if(c>60*2)
+            if (c > 60 * 2)
             {
-                avg = acc/c;
+                avg = acc / c;
                 acc = c = 0;
             }
 
             spriteBatch.Begin();
-            spriteBatch.DrawString(font, "Draw Mode: " + drawMode, new Vector2(32, 32), Color.White);
-            spriteBatch.DrawString(font, msec.ToString("#0.000",CultureInfo.InvariantCulture) + "ms", new Vector2(32, GraphicsDevice.Viewport.Height - 130), Color.White);
-            spriteBatch.DrawString(font, avg.ToString("#0.000",CultureInfo.InvariantCulture) + "ms (avg)", new Vector2(32, GraphicsDevice.Viewport.Height - 100), Color.White);
-            spriteBatch.DrawString(font, msecMin.ToString("#0.000",CultureInfo.InvariantCulture) + "ms (min)", new Vector2(32, GraphicsDevice.Viewport.Height - 70), Color.White);
-            spriteBatch.DrawString(font, msecMax.ToString("#0.000",CultureInfo.InvariantCulture) + "ms (max)", new Vector2(32, GraphicsDevice.Viewport.Height - 40), Color.White);
+            spriteBatch.DrawString(font, "Anim: " + curAnim, new Vector2(32, GraphicsDevice.Viewport.Height - 190), Color.White);
+            spriteBatch.DrawString(font, "Zoom: " + Zoom, new Vector2(32, GraphicsDevice.Viewport.Height - 160), Color.White);
+            spriteBatch.DrawString(font, msec.ToString("#0.000", CultureInfo.InvariantCulture) + "ms", new Vector2(32, GraphicsDevice.Viewport.Height - 130), Color.White);
+            spriteBatch.DrawString(font, avg.ToString("#0.000", CultureInfo.InvariantCulture) + "ms (avg)", new Vector2(32, GraphicsDevice.Viewport.Height - 100), Color.White);
+            spriteBatch.DrawString(font, msecMin.ToString("#0.000", CultureInfo.InvariantCulture) + "ms (min)", new Vector2(32, GraphicsDevice.Viewport.Height - 70), Color.White);
+            spriteBatch.DrawString(font, msecMax.ToString("#0.000", CultureInfo.InvariantCulture) + "ms (max)", new Vector2(32, GraphicsDevice.Viewport.Height - 40), Color.White);
             spriteBatch.End();
-            
+
             base.Draw(gameTime);
         }
 

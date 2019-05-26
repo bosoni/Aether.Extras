@@ -1,3 +1,24 @@
+Fork of https://github.com/tainicom/Aether.Extras
+Animation testing, didnt touch other projects.
+
+* added  Samples.OPENGL.MG.sln  and modified project files so they load Libs/MonoGame.Framework.dll  (crossplatform opengl dll) (so this should work with win/linux/mac -only windows tested)
+
+* modified Animation projectfiles so they use .NET 4.8 instead of 4.5 (which doesnt work with new monogame dll) (change if you need to)
+
+* removed all CPU animation files (because they use SharpDX)
+
+* modified Sample.Animation so space key changes animation and up/down changes zoom
+
+* added own stickman_nla .fbx and .blend files, contains couple of animations (idle/walk)
+  (for some reason it doesnt use texture, will check it ASAP)
+  
+* noticed that I must build solution couple of times and then errors are gone (just for info)
+
+
+--------------------------------
+
+Orig README:
+
 # Aether.Extras
 MonoGame Content Importers, Shaders, etc
 
