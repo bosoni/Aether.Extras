@@ -52,8 +52,8 @@ namespace Samples.Animation
                 Console.WriteLine("Key = {0}, Value = {1}", kvp.Key, kvp.Value);
                 animations[c++] = kvp.Value;
             }
-            //_animations.SetClip(_animations.Clips["Walk.001"]);
-            _animations.SetClip(animations[3]);
+            //_animations.SetClip(_animations.Clips["Idle.001"]);
+            _animations.SetClip(animations[0]);
         }
 
         protected override void UnloadContent()
@@ -91,7 +91,7 @@ namespace Samples.Animation
         }
 
         private Vector3 Position = Vector3.Zero;
-        private float Zoom = 1000f;
+        private float Zoom = 500;
         private float RotationY = 0.0f;
         private float RotationX = 0.0f;
         private Matrix gameWorldRotation = Matrix.Identity;
@@ -111,8 +111,8 @@ namespace Samples.Animation
             float aspectRatio = graphics.GraphicsDevice.Viewport.AspectRatio;
             Matrix projection = Matrix.CreatePerspectiveFieldOfView(MathHelper.ToRadians(45.0f), aspectRatio, 0.01f, 10000.0f);
             Matrix view = Matrix.CreateLookAt(
-                            new Vector3(0.0f, 40, -Zoom),
-                            new Vector3(0.0f, 40.0f, 0),
+                            new Vector3(0.0f, 60, -Zoom),
+                            new Vector3(0.0f, 60.0f, 0),
                             Vector3.Up);
 
             GraphicsDevice.BlendState = BlendState.Opaque;
@@ -126,14 +126,12 @@ namespace Samples.Animation
             sw.Reset();
             sw.Start();
 
-            //Texture2D tex = Content.Load<Texture2D>("stickman_0"); // tried manually set texture, didnt work. why?
-
             foreach (ModelMesh mesh in _model_GPU.Meshes)
             {
                 foreach (var part in mesh.MeshParts)
                 {
-                    //((SkinnedEffect)part.Effect).Texture = tex; // tried manually set texture, didnt work. why?
-                    ((SkinnedEffect)part.Effect).SpecularColor = Vector3.One;
+                    ((SkinnedEffect)part.Effect).Alpha = 1.0f;
+                    //((SkinnedEffect)part.Effect).SpecularColor = Vector3.One;
                     ConfigureEffectMatrices((IEffectMatrices)part.Effect, Matrix.Identity, view, projection);
                     ConfigureEffectLighting((IEffectLights)part.Effect);
                     ((SkinnedEffect)part.Effect).SetBoneTransforms(_animations.AnimationTransforms);// animate vertices on GPU
