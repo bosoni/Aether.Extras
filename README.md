@@ -10,7 +10,6 @@ Animation testing, didnt touch other projects.
 * modified Sample.Animation so space key changes animation and up/down changes zoom
 
 * added own stickman_nla .fbx and .blend files, contains couple of animations (idle/walk)
-  (for some reason it doesnt use texture, will check it ASAP)
   
 * noticed that I must build solution couple of times and then errors are gone (just for info)
 
